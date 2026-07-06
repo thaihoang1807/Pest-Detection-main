@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.git
+.env
+venv/
+venv1/
+.venv/
+.ipynb_checkpoints/
+
+pest_detection_training/
+
+.vscode/
+.idea/

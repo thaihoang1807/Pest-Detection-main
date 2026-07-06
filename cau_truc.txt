@@ -1,0 +1,157 @@
+Folder PATH listing for volume DATA
+Volume serial number is 0000000A 8EC9:14CD
+F:.
+|   .dockerignore
+|   .gitignore
+|   cau_truc.txt
+|   docker-compose.yml
+|   LICENSE
+|   package-lock.json
+|   README.md
+|   
++---assets
+|       demo1.gif
+|       demo2.gif
+|       
++---backend
+|   |   Dockerfile
+|   |   main.py
+|   |   README.md
+|   |   requirements.txt
+|   |   seed_admin.py
+|   |   worker.py
+|   |   
+|   +---api
+|   |   |   deps.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---routes
+|   |           auth.py
+|   |           history.py
+|   |           models.py
+|   |           predict.py
+|   |           stats.py
+|   |           __init__.py
+|   |           
+|   +---db
+|   |       database.py
+|   |       __init__.py
+|   |       
+|   +---example
+|   |       .env.example
+|   |       curl_example
+|   |       model_version.example.json
+|   |       
+|   +---models
+|   |   |   batch_summary.py
+|   |   |   detection.py
+|   |   |   model_version.py
+|   |   |   user.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---version
+|   |           best.pt
+|   |           best2.pt
+|   |           
+|   +---monitoring
+|   |       alertmanager.yml
+|   |       alert_rules.yml
+|   |       prometheus.yml
+|   |       
+|   +---schemas
+|   |       batch.py
+|   |       detection.py
+|   |       history.py
+|   |       model_version.py
+|   |       
+|   +---services
+|   |       authentication_service.py
+|   |       batch_service.py
+|   |       cloudinary_service.py
+|   |       detection_service.py
+|   |       eigen_cam_service.py
+|   |       email_service.py
+|   |       inference_service.py
+|   |       jwt_handler.py
+|   |       model_registry.py
+|   |       otp_service.py
+|   |       predict_service.py
+|   |       user_service.py
+|   |       __init__.py
+|   |       
+|   +---uploads
+|   |       img1.jpg
+|   |       img2.jpg
+|   |       img3.jpg
+|   |       img4.jpg
+|   |       img5.jpg
+|   |       img6.jpg
+|   |       img7.jpg
+|   |       
+|   \---utils
+|           logger.py
+|           metrics.py
+|           
++---frontend
+|   |   index.html
+|   |   package-lock.json
+|   |   package.json
+|   |   README.md
+|   |   vite.config.js
+|   |   
+|   \---src
+|       |   App.jsx
+|       |   main.jsx
+|       |   styles.css
+|       |   
+|       +---components
+|       |   |   AppNavigation.jsx
+|       |   |   BatchPredictionPanel.jsx
+|       |   |   DashboardStats.jsx
+|       |   |   EmptyState.jsx
+|       |   |   HistoryTable.jsx
+|       |   |   ModelRegistry.jsx
+|       |   |   ResultPanel.jsx
+|       |   |   StatTile.jsx
+|       |   |   StatusBadge.jsx
+|       |   |   UploadPanel.jsx
+|       |   |   
+|       |   \---__tests__
+|       |           UploadPanel.test.jsx
+|       |           
+|       +---pages
+|       |       ForgotPasswordPage.jsx
+|       |       LoginPage.jsx
+|       |       RegisterPage.jsx
+|       |       
+|       \---services
+|               api.js
+|               socket.js
+|               useAuth.js
+|               
++---grafana_dashboard
+|       dashboard-1780124503379.json
+|       
+\---pest_detection_training
+    |   requirements_training.txt
+    |   
+    +---config
+    |       config.py
+    |       data.yaml
+    |       
+    +---googlecolab
+    |       google_colab.yaml
+    |       trainYolo.ipynb
+    |       
+    +---models
+    |   \---runs
+    |           run2.zip
+    |           
+    +---notebooks
+    |       train.ipynb
+    |       yolov8m.pt
+    |       yolov8s.pt
+    |       
+    \---utils
+            util.py
+            

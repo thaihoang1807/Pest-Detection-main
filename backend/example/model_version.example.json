@@ -1,0 +1,7 @@
+{
+  "name": "Model1",
+  "file_path": "models/version/best.pt",
+  "description": "None",
+  "mAP50": 0.77,
+  "mAP50_95": 0.55
+}
