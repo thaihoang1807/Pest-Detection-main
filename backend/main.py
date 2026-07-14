@@ -1,4 +1,6 @@
+import os # Thêm thư viện os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles # Thêm thư viện mở thư mục tĩnh
 from dotenv import load_dotenv
 from prometheus_fastapi_instrumentator import Instrumentator
 from db.database import engine, Base
@@ -11,11 +13,18 @@ Base.metadata.create_all(bind=engine)
 
 import seed_admin
 
-from api.routes import predict,history,stats,auth,models
+from api.routes import predict, history, stats, auth, models
 
 load_dotenv()
 
 app = FastAPI()
+
+# ==========================================================
+# 🌟 BẢN VÁ: MỞ CỬA THƯ MỤC 'UPLOADS' ĐỂ XEM VIDEO/ẢNH 🌟
+# ==========================================================
+os.makedirs("uploads", exist_ok=True) # Đảm bảo thư mục luôn tồn tại
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# ==========================================================
 
 Instrumentator().instrument(app).expose(app)
 

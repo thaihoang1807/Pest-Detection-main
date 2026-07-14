@@ -13,15 +13,16 @@ from utils.metrics import (
 
 logger = get_logger(__name__)
 
+# Bổ sung class số 3 để đồng bộ với YOLO11
 PEST_MAPPING = {
     "bo thon": "thin_pest",
     "bo map" : "round_pest",
     "bo to"  : "big_pest",
-    "con khac": "big_pest"
+    "con khac": "big_pest" 
 }
 
 # ==========================================================
-# HÀM 1: XỬ LÝ ẢNH TĨNH (Đã chạy hoàn hảo)
+# HÀM 1: XỬ LÝ ẢNH TĨNH
 # ==========================================================
 def predict_image(file_path: str, conf: float = 0.25, model=None) -> dict:
     if model is None:
@@ -33,8 +34,8 @@ def predict_image(file_path: str, conf: float = 0.25, model=None) -> dict:
 
     result = results[0]
     
-    # Ép AI YOLO dịch từ số (0, 1, 2) sang tên Tiếng Việt
-    result.names = {0: "bo to", 1: "bo map", 2: "bo thon"}
+    # Ép AI YOLO dịch từ số sang tên Tiếng Việt (Có class 3)
+    result.names = {0: "bo to", 1: "bo map", 2: "bo thon", 3: "con khac"}
     
     input_path = Path(file_path)
     output_img_path = str(input_path.parent / f"output_{input_path.stem}.jpg")
@@ -91,67 +92,57 @@ def predict_image(file_path: str, conf: float = 0.25, model=None) -> dict:
 
 
 # ==========================================================
-# HÀM 2: XỬ LÝ VIDEO (Tích hợp thêm cho nhóm Backend)
+# HÀM 2: XỬ LÝ VIDEO (BẢN FINAL: MAX COUNT + KÍNH LÚP 1280)
 # ==========================================================
-def predict_video_file(input_video_path: str, conf: float = 0.35) -> dict:
+def predict_video_file(input_video_path: str, conf: float = 0.15) -> dict:
     """
-    Hàm xử lý video: Đọc video, Tracking, Đếm qua vạch và Xuất video kết quả
+    Hàm xử lý video: Đọc video, nhận diện độ phân giải cao và tính Tổng số lớn nhất (Max Count)
     """
-    # Load Model (Dùng bản ONNX 6MB cho tốc độ xử lý video mượt)
-    # Lưu ý: Đường dẫn này là đường dẫn bên trong Docker Container của Backend
-    model = YOLO("models/version/best_v2_nano.onnx", task="detect")
+    # Load Model YOLO11 (Dùng bản .pt để xài tính năng kính lúp imgsz=1280)
+    model = YOLO("models/version/best_yolo11_final.pt")
     
     cap = cv2.VideoCapture(input_video_path)
     if not cap.isOpened():
         raise Exception("Không thể đọc được video tải lên!")
 
-    # Cấu hình file Video đầu ra (Output)
+    # Cấu hình file Video đầu ra (.webm để xem được trên Web)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     
-    # Tạo tên file output ngẫu nhiên tránh trùng lặp
-    output_filename = f"output_video_{uuid.uuid4().hex[:8]}.mp4"
+    output_filename = f"output_video_{uuid.uuid4().hex[:8]}.webm"
     output_video_path = os.path.join("uploads", output_filename)
     
-    # Cấu hình bộ ghi video
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # Định dạng vp80 dành cho WebM
+    fourcc = cv2.VideoWriter_fourcc(*'vp80')
     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
 
-    # Setup Vạch đếm (Vẽ ở giữa màn hình video)
-    LINE_Y = height // 2 
-    track_history = {}
-    total_count = 0
+    # THUẬT TOÁN ĐẾM MAX COUNT
+    max_count = 0
 
     while True:
         success, frame = cap.read()
         if not success:
             break
 
-        results = model.track(frame, conf=conf, iou=0.5, persist=True, tracker="botsort.yaml", verbose=False)
-        annotated_frame = results[0].plot()
+        # Ép AI nhìn ảnh phân giải cao (1280) để không sót bọ
+        results = model.predict(frame, conf=conf, iou=0.6, imgsz=1280, verbose=False)
+        result = results[0]
+        
+        # Đồng bộ từ điển tên (có Class 3)
+        result.names = {0: "bo to", 1: "bo map", 2: "bo thon", 3: "con khac"}
+        
+        annotated_frame = result.plot()
+        current_count = len(result.boxes)
 
-        # Vẽ vạch đếm màu vàng
-        cv2.line(annotated_frame, (0, LINE_Y), (width, LINE_Y), (0, 255, 255), 2)
+        # Cập nhật số lượng kỷ lục (Max Count)
+        if current_count > max_count:
+            max_count = current_count
 
-        if results[0].boxes.id is not None:
-            boxes = results[0].boxes.xyxy.cpu()
-            track_ids = results[0].boxes.id.int().cpu().tolist()
-
-            for box, track_id in zip(boxes, track_ids):
-                x1, y1, x2, y2 = box
-                center_y = int((y1 + y2) / 2)
-                prev_y = track_history.get(track_id, center_y)
-
-                # Thuật toán đếm qua vạch 2 chiều
-                if (prev_y < LINE_Y and center_y >= LINE_Y) or (prev_y > LINE_Y and center_y <= LINE_Y):
-                    total_count += 1
-                    cv2.line(annotated_frame, (0, LINE_Y), (width, LINE_Y), (0, 0, 255), 6) # Chớp đỏ khi qua vạch
-
-                track_history[track_id] = center_y
-
-        # Ghi chữ lên video
-        cv2.putText(annotated_frame, f"Tong so qua vach: {total_count}", (20, 50), 
+        # Ghi chữ lên video xuất ra
+        cv2.putText(annotated_frame, f"Dang co tren man hinh: {current_count}", (20, 50), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+        cv2.putText(annotated_frame, f"TONG SO THUC TE (MAX): {max_count}", (20, 100), 
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
 
         out.write(annotated_frame)
@@ -160,6 +151,6 @@ def predict_video_file(input_video_path: str, conf: float = 0.35) -> dict:
     out.release()
 
     return {
-        "total_count": total_count,
+        "total_count": max_count,
         "output_video_path": output_video_path
     }
