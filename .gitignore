@@ -46,3 +46,6 @@ frontend/.eslintcache
 # OS
 .DS_Store
 Thumbs.db
+
+# Ép Git bắt buộc phải tải file ONNX này lên mạng, không được chặn
+!backend/models/version/best_yolo11_final.onnx
