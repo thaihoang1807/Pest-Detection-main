@@ -96,10 +96,12 @@ def predict_image(file_path: str, conf: float = 0.25, model=None) -> dict:
 # ==========================================================
 def predict_video_file(input_video_path: str, conf: float = 0.15) -> dict:
     """
-    Hàm xử lý video: Đọc video, nhận diện độ phân giải cao và tính Tổng số lớn nhất (Max Count)
+    Hàm xử lý video ĐÃ TỐI ƯU HÓA RAM CHO CLOUD:
+    - Sử dụng mô hình ONNX siêu nhẹ (11MB) thay vì PT.
+    - Giảm imgsz xuống 640 để không bị tràn bộ nhớ 512MB RAM của Render.
     """
-    # Load Model YOLO11 (Dùng bản .pt để xài tính năng kính lúp imgsz=1280)
-    model = YOLO("models/version/best_yolo11_final.pt")
+    # 1. BẮT BUỘC DÙNG FILE .ONNX ĐỂ TIẾT KIỆM BỘ NHỚ
+    model = YOLO("models/version/best_v2_nano.onnx", task="detect")
     
     cap = cv2.VideoCapture(input_video_path)
     if not cap.isOpened():
@@ -125,8 +127,8 @@ def predict_video_file(input_video_path: str, conf: float = 0.15) -> dict:
         if not success:
             break
 
-        # Ép AI nhìn ảnh phân giải cao (1280) để không sót bọ
-        results = model.predict(frame, conf=conf, iou=0.6, imgsz=1280, verbose=False)
+        # 2. GIẢM IMGSZ XUỐNG 640 ĐỂ TRÁNH BỊ CHẶN RAM SẬP SERVER
+        results = model.predict(frame, conf=conf, iou=0.6, imgsz=640, verbose=False)
         result = results[0]
         
         # Đồng bộ từ điển tên (có Class 3)
