@@ -1,10 +1,8 @@
 from ultralytics import YOLO
 
-# 1. Load file PT của bạn
+# Load đúng file YOLO11 mới nhất của bạn
 model = YOLO(r"F:\thực_tập\Pest-Detection-main\backend\models\version\best_yolo11_final.pt")
 
-# 2. Xuất ra định dạng ONNX
-print("⏳ Đang ép cân sang ONNX...")
-success = model.export(format="onnx")
-
-print(f"🎉 Ép cân thành công! File ONNX đã được lưu tại: {success}")
+# Xuất ra định dạng ONNX
+model.export(format="onnx")
+print("🎉 Xuất file ONNX thành công!")

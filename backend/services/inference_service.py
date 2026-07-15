@@ -101,7 +101,7 @@ def predict_video_file(input_video_path: str, conf: float = 0.15) -> dict:
     - Giảm imgsz xuống 640 để không bị tràn bộ nhớ 512MB RAM của Render.
     """
     # 1. BẮT BUỘC DÙNG FILE .ONNX ĐỂ TIẾT KIỆM BỘ NHỚ
-    model = YOLO("models/version/best_v2_nano.onnx", task="detect")
+    model = YOLO("models/version/best_yolo11_final.onnx", task="detect")
     
     cap = cv2.VideoCapture(input_video_path)
     if not cap.isOpened():
