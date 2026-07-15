@@ -14,7 +14,11 @@ celery
 redis
 
 grad-cam
-opencv-python
+# ĐÃ ĐỔI SANG BẢN HEADLESS DÀNH CHO SERVER
+opencv-python-headless
+# THÊM THƯ VIỆN IOT
+paho-mqtt
+
 matplotlib
 httpx
 prometheus-fastapi-instrumentator

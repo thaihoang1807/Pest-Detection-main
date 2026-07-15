@@ -1,8 +1,8 @@
 import cv2
+import numpy as np
 import paho.mqtt.client as mqtt
 from ultralytics import YOLO
 
-# 1. CẤU HÌNH MQTT (Giữ nguyên)
 MQTT_BROKER = "broker.hivemq.com"
 MQTT_PORT = 1883
 MQTT_TOPIC = "nongnghiep_iot/thuctap/dem_sau_ray"
@@ -10,10 +10,8 @@ MQTT_TOPIC = "nongnghiep_iot/thuctap/dem_sau_ray"
 mqtt_client = mqtt.Client()
 mqtt_client.connect(MQTT_BROKER, MQTT_PORT)
 
-# 2. KHỞI ĐỘNG AI YOLO11 MỚI NHẤT
-# Đã sửa đường dẫn tới file YOLO11 và thêm task="detect"
 model_path = r"backend/models/version/best_yolo11_final.pt"
-model = YOLO(model_path, task="detect") 
+model = YOLO(model_path)
 
 video_source = "video_test.mp4" 
 cap = cv2.VideoCapture(video_source)
@@ -21,31 +19,47 @@ cap = cv2.VideoCapture(video_source)
 max_count = 0
 last_sent_count = -1
 
-print("🚀 Đang chạy TRÙM CUỐI YOLO11 - Chế độ Kính Lúp...")
+print("🚀 Bắt đầu chế độ HYBRID AI (Đã tinh chỉnh thông số vàng)...")
 
 while True:
     success, frame = cap.read()
     if not success:
         break
 
-    # Ép AI nhìn ảnh phân giải cao 1280 để không bỏ sót bọ nhỏ
-    results = model.predict(frame, conf=0.15, iou=0.6, imgsz=1280, verbose=False)
-    
+    # 🌟 TINH CHỈNH 1: Trả conf về 0.25 (chắc chắn mới khoanh) và iou=0.45 (xóa khung trùng)
+    results = model.predict(frame, conf=0.25, iou=0.45, imgsz=1280, verbose=False)
     result = results[0]
-    
-    # ⚠️ LƯU Ý QUAN TRỌNG: 
-    # Nếu kết quả hiện tên bị sai (ví dụ bọ to thành bọ thon), 
-    # bạn hãy sửa lại thứ tự 0, 1, 2 ở dòng dưới cho khớp với lúc up lên Roboflow nhé.
     result.names = {0: "bo to", 1: "bo map", 2: "bo thon", 3: "con khac"}
     
     annotated_frame = result.plot()
     current_count = len(result.boxes)
 
-    # Cập nhật số lượng kỷ lục (Max Count)
+    for box in result.boxes:
+        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
+        class_id = int(box.cls[0])
+        box_area = (x2 - x1) * (y2 - y1)
+        
+        # 🌟 TINH CHỈNH 2: Chỉ soi kính lúp với những khung THỰC SỰ BỰ (>2000 pixel)
+        if class_id == 0 and box_area > 2000: 
+            crop_img = frame[y1:y2, x1:x2]
+            gray = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY)
+            _, thresh = cv2.threshold(gray, 100, 255, cv2.THRESH_BINARY_INV)
+            
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            # 🌟 TINH CHỈNH 3: Bỏ qua hạt bụi, đốm đen phải bự (>80) mới tính là bọ
+            bugs_in_cluster = len([c for c in contours if cv2.contourArea(c) > 80])
+            
+            if bugs_in_cluster > 1:
+                current_count += (bugs_in_cluster - 1)
+                cv2.putText(annotated_frame, f"Chum: {bugs_in_cluster} con", (x1, y1 - 10), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+
+    # Cập nhật Max Count
     if current_count > max_count:
         max_count = current_count
 
-    # Bắn MQTT khi số lượng thay đổi
+    # Bắn MQTT
     if max_count != last_sent_count:
         mqtt_client.publish(MQTT_TOPIC, str(max_count))
         last_sent_count = max_count
@@ -56,13 +70,13 @@ while True:
     cv2.putText(annotated_frame, f"TONG SO THUC TE (MAX): {max_count}", (20, 100), 
                 cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 3)
 
-    # Giữ nguyên tỷ lệ dọc để không bị méo hình
+    # Hiển thị
     h, w = annotated_frame.shape[:2]
     new_h = 800
     new_w = int(w * (new_h / h))
     resized_show = cv2.resize(annotated_frame, (new_w, new_h))
     
-    cv2.imshow("He Thong AIoT YOLO11 - Final Version", resized_show)
+    cv2.imshow("He Thong IoT - Tuned Hybrid AI", resized_show)
 
     if cv2.waitKey(30) & 0xFF == ord('q'):
         break
